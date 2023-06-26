@@ -17,18 +17,25 @@ def plot_results(pred, labels, mode, dataset_name, freq):
         
         print(f'Plotted {i} / {pred.shape[0]}')
         plt.imshow(pred[i], cmap='RdBu', vmin=-1., vmax=1)
+        # fig, ax = plt.subplots(figsize=(3, 1))
+        # plt.colorbar(plt.cm.ScalarMappable( cmap='RdBu'),
+        #            ax=ax,
+        #            orientation='vertical',
+        #            ticks=[-1,
+        #                   1],
+        #            pad=0.01)
         plt.axis('off')
-        plt.savefig(f"../{mode}/{dataset_name}/plots/{i}_pred.png", bbox_inches='tight', dpi=600)
+        plt.savefig(f"../{mode}/{dataset_name}/plots/pred_{i}.png", bbox_inches='tight', dpi=600)
         plt.close()
 
         plt.imshow(labels[i], cmap= 'RdBu', vmin=-1., vmax=1)
         plt.axis('off')
-        plt.savefig(f"../{mode}/{dataset_name}/plots/{i}_label.png", bbox_inches='tight',  dpi=600)
+        plt.savefig(f"../{mode}/{dataset_name}/plots/label_{i}.png", bbox_inches='tight',  dpi=600)
         plt.close()
 
         plt.imshow(pred[i]-labels[i], cmap= 'bwr', vmin=-1., vmax=1)
         plt.axis('off')
-        plt.savefig(f"../{mode}/{dataset_name}/plots/{i}_diff.png", bbox_inches='tight',  dpi=600)
+        plt.savefig(f"../{mode}/{dataset_name}/plots/diff_{i}.png", bbox_inches='tight',  dpi=600)
         plt.close()
 
 def plot_simulate(mse): 

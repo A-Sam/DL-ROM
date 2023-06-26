@@ -6,3 +6,4 @@ latent/
 results/
 .mypy_cache/
 code/__pycache__/
+data/

@@ -10,7 +10,7 @@ from matplotlib.animation import ArtistAnimation, FFMpegWriter
 from zipfile import ZipFile
 import pyJHTDB
 
-from model import MyDataset, autoencoder
+# from model import MyDataset, autoencoder
 
 path_bousinessq = "../data/boussinesq.nc"
 path_2dcylinder = "../data/cylinder2d.nc"

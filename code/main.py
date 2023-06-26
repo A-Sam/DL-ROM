@@ -8,12 +8,13 @@ import os
 import argparse
 import time
 import torchvision
-from model import MyDataset, MLP_Dataset, LSTM_Dataset, autoencoder, autoencoder_B, MLP, Unet, LSTM, LSTM_B, AE_3D_Dataset, autoencoder_3D,UNet_3D
+from model import   AE_3D_Dataset,UNet_3D
+# from model import MyDataset, MLP_Dataset, LSTM_Dataset, autoencoder, autoencoder_B, MLP, Unet, LSTM, LSTM_B, AE_3D_Dataset, autoencoder_3D,UNet_3D
 from train import training, validation, test, simulate
 from utils import load_transfer_learning, insert_time_channel, find_weight, load_transfer_learning_UNet_3D, save_loss, normalize_data, MSE, plot_training
 import warnings
 import pdb
-import cv2
+import cv
 
 '''
 python main.py -N 100 -B 32 -d_set 2d_cylinder_CFD --train/ --transfer/ --simulate --test/ -test_epoch 
@@ -31,6 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--train', dest='training', action='store_true')
     parser.add_argument('--transfer', dest='transfer', action='store_true')
     parser.add_argument('--simulate', dest='simulate', action='store_true')
+    parser.add_argument('--last_pth', dest='last_pth', type=int, default=None )
 
     args = parser.parse_args()
     num_epochs = args.num_epochs
@@ -38,6 +40,7 @@ if __name__ == '__main__':
     dataset_name = args.dataset
     test_epoch = args.test_epoch
     transfer_learning = args.transfer
+    last_pth = args.last_pth
 
     print(num_epochs, batch_size)
 
@@ -100,7 +103,7 @@ if __name__ == '__main__':
         u = normalize_data(u)
 
     elif dataset_name == '2d_airfoil':
-        u_flat = np.load('../data/airfoil_80x320_data.npy', allow_pickle=True)
+        u_flat = np.load('../data/airfoil80x320_data.npy', allow_pickle=True)
         print(u_flat.shape)
         u = u_flat.reshape(u_flat.shape[0], 320, 80)
         u = np.transpose(u, (0, 2, 1))[:,:,140:-20].astype(np.float32)
@@ -153,7 +156,7 @@ if __name__ == '__main__':
         final_model = UNet_3D(name=final_dataset_name)
         pretrained = UNet_3D(name=pre_dataset_name)
 
-        PATH = f"../results/{pre_dataset_name}/weights/100.pth"
+        PATH = f"../results/{pre_dataset_name}/weights/{last_pth}.pth"
     
         model = load_transfer_learning_UNet_3D(pretrained, final_model, PATH, req_grad=False)
     else:
@@ -193,7 +196,7 @@ if __name__ == '__main__':
         Val_loss = {}
         Train_loss = {}
 
-        validation_freq = 1
+        validation_freq = 20
         #Epoch loop
         for epoch in range(num_epochs):
             start_time=time.time()

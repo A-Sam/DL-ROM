@@ -8,7 +8,7 @@ from torchvision import transforms
 import matplotlib.pyplot as plt 
 from matplotlib.animation import ArtistAnimation, FFMpegWriter
 from zipfile import ZipFile
-import pyJHTDB
+# import pyJHTDB
 
 # from model import MyDataset, autoencoder
 

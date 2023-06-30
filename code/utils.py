@@ -157,7 +157,7 @@ def normalize_data(u):
 def MSE(dataset_name, pred, target):
     mse=np.sum((target-pred)**2)/(pred.shape[0]*pred.shape[1]*pred.shape[2])
     print(mse)
-    np.save(f'../results/{dataset_name}/MSE.npy',mse)
+    np.save(f'../results/{dataset_name}/mse.npy',mse)
 
 def MSE_simulate(pred, target):
     mse=np.sum((target-pred)**2)/(pred.shape[0]*pred.shape[1])

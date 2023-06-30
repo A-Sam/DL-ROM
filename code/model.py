@@ -11,6 +11,7 @@ class AE_3D_Dataset(data.Dataset):
         # if name == 'SST':
         #     input = input[:,10:-10,20:-20]
 
+        # NOTE 4: Prepare the hash map by craeting batches/ranges of 10-frames-patches
         self.input = input[:-10]
         self.target = input[10:]
         self.transform = transform
@@ -24,9 +25,12 @@ class AE_3D_Dataset(data.Dataset):
         idx = self.hashmap[index]
         # print(idx)
         idy = self.hashmap[index]
+
+        # NOTE 5: every 10s frame is obtained as a part of 10 frames/range thats read every iteration. Explain the indexing and draw it
         ip=self.input[idx]
         op=self.target[idy]
 
+        # NOTE 6: batch dimentionality preparation
         x=self.transform(ip)
         x=x.permute(1, 2, 0)
         x=x.unsqueeze(0)
@@ -84,7 +88,7 @@ class UNet_3D(nn.Module):
         elif name=='2d_airfoil':
             d1=Downsample_3d(1, 16, (3, 3, 4), stride=(1, 1, 2), padding=(0, 1, 1)) #16,80,80
             u5=Upsample_3d(32, 1, (3, 3, 4), stride=(1, 1, 2), padding=(0, 1, 1)) #190,360
-        
+
         elif name=='boussinesq':
             d1= Downsample_3d(1,16,(3,8,4),stride=(1,4,2),padding=(0,2,1))
             u5 = Upsample_3d(32,1,(3,8,4),stride=(1,4,2),padding=(0,2,1))
@@ -95,7 +99,7 @@ class UNet_3D(nn.Module):
             #Note - Remember to crop in dataloader
             d1=Downsample_3d(1, 16, (3, 4, 8), stride=(1, 2, 4), padding=(0, 1, 2))
             u5=Upsample_3d(32,1,(3,4,8),stride=(1,2,4),padding=(0,1,2))
-            
+
         elif name=='channel_flow':
             d1=Downsample_3d(1, 16, (3, 8, 3), stride=(1, 4, 1), padding=(0, 2, 1)) #16,80,80
             u5=Upsample_3d(32, 1, (3, 8, 3), stride=(1, 4, 1), padding=(0, 2, 1)) #190,360
@@ -103,21 +107,21 @@ class UNet_3D(nn.Module):
         else:
             print(f'Dataset Not Defined')
 
-
+        # NOTE 3: Define Down and Up sampling dimensions, here we have to ADAPT input and OUTPUT only -> intrusive step
         self.d1=d1
-        self.d2=Downsample_3d(16, 32, (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #44
-        self.d3=Downsample_3d(32, 64, (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #22 
-        self.d4=Downsample_3d(64, 128, (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #10
+        self.d2=Downsample_3d(16 , 32 , (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #44
+        self.d3=Downsample_3d(32 , 64 , (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #22
+        self.d4=Downsample_3d(64 , 128, (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #10
         self.d5=Downsample_3d(128, 256, (2, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #5
 
         self.h = 32
         self.down = nn.Linear(256*5*5, self.h)
         self.up = nn.Linear(self.h, 256*5*5)
 
-        self.u1=Upsample_3d(512, 128,(2, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #10
-        self.u2=Upsample_3d(256,64, (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #22
-        self.u3=Upsample_3d(128,32, (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #44
-        self.u4=Upsample_3d(64, 16, (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #90
+        self.u1=Upsample_3d(512, 128, (2, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #10
+        self.u2=Upsample_3d(256, 64 , (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #22
+        self.u3=Upsample_3d(128, 32 , (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #44
+        self.u4=Upsample_3d(64 , 16 , (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #90
         self.u5=u5#190,360
 
 
@@ -142,7 +146,7 @@ class UNet_3D(nn.Module):
         up2=self.u2(down4,up1)
         up3=self.u3(down3,up2)
         up4=self.u4(down2,up3)
-        
+
         # if self.name=='boussinesq':
         #     out= self.u5(down1,up4)
         #     out =self.u6(out)

@@ -15,6 +15,7 @@ class AE_3D_Dataset(data.Dataset):
         self.input = input[:-10]
         self.target = input[10:]
         self.transform = transform
+        # NOTE 4': each pth file represents 10 frames
         self.hashmap = {i:range(i, i+100, 10) for i in range(self.input.shape[0] - 100)}
         print(len(self.hashmap))
 

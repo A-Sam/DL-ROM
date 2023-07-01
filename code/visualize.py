@@ -6,7 +6,7 @@ import os
 from dataset_create import createAnimation
 
 """
-python visualize.py -mode results -d_set 2d_cylinder -freq 10
+python visualize.py -mode results -d_set 2d_cylinder -samples 10
 python visualize.py -mode simulate -d_set 2d_cylinder
 """
 
@@ -15,34 +15,43 @@ def preprocess_plot_data(arr):
     return abs(arr)
 
 
-def plot_results(pred, labels, mode, dataset_name, freq):
+def plot_results(pred, labels, mode, dataset_name, samples):
     assert pred.shape == labels.shape
 
-    for i in range(0, pred.shape[0], freq):
+    for i in np.linspace(0,pred.shape[0]-1,samples,dtype=int):
         print(f"Plotted {i} / {pred.shape[0]}")
-        plt.imshow(preprocess_plot_data(pred[i]), cmap="turbo", vmin=0, vmax=0.5)
-        # fig, ax = plt.subplots(figsize=(3, 1))
-        # plt.colorbar(plt.cm.ScalarMappable( cmap='turbo'),
-        #            ax=ax,
-        #            orientation='vertical',
-        #            ticks=[-1,
-        #                   1],
-        #            pad=0.01)
-        # plt.axis("off")
-        plt.savefig(f"../{mode}/{dataset_name}/plots/pred_{i}.png", dpi=600)
-        plt.close()
-        # print("pred[" + str(i) + "]" + str(pred[i]))
 
-        plt.imshow(preprocess_plot_data(labels[i]), cmap="turbo", vmin=0, vmax=0.5)
-        # plt.axis("off")
-        plt.savefig(f"../{mode}/{dataset_name}/plots/label_{i}.png", dpi=600)
-        plt.close()
+        flattend_sink_arr = np.concatenate((labels[i], pred[i])).flatten()
+        range_min = min(flattend_sink_arr.flatten())
+        range_max = max(flattend_sink_arr.flatten())
+        # NOTE Provide information on trained data and system
+        plt.subplot(3, 1, 1)
+        im = plt.imshow((labels[i]), cmap="turbo", vmin=range_min, vmax=range_max)
+        plt.title("(a) Groundtruth", y=-0.30)
+        plt.axis("off")
+        cbar = plt.colorbar(im, orientation='vertical', pad=0.01)
         # print("labels[" + str(i) + "]" + str(labels[i]))
 
+        plt.subplot(3, 1, 2)
+        im = plt.imshow((pred[i]), cmap="turbo", vmin=range_min, vmax=range_max)
+        plt.title("(b) Predection", y=-0.30)
+        plt.axis("off")
+        cbar = plt.colorbar(im, orientation='vertical', pad=0.01)
+        # print("pred[" + str(i) + "]" + str(pred[i]))
+
         pred_label_diff = preprocess_plot_data(pred[i] - labels[i])
-        plt.imshow(pred_label_diff, cmap="turbo", vmin=0, vmax=0.5)
-        # plt.axis('off')
-        plt.savefig(f"../{mode}/{dataset_name}/plots/diff_{i}.png", dpi=600)
+        plt.subplot(3, 1, 3)
+        im = plt.imshow(pred_label_diff, cmap="turbo", vmin=0, vmax=max(pred_label_diff.flatten()))
+        plt.title("(c) Absolute Error", y=-0.30)
+        plt.axis("off")
+        cbar = plt.colorbar(im, orientation='vertical', pad=0.01)
+
+        plt.subplots_adjust(hspace=0.50)
+        plt.savefig(
+            f"../{mode}/{dataset_name}/plots/frame_{i}.png",
+            dpi=600,
+            bbox_inches="tight",
+            pad_inches=0)
         plt.close()
         # print("pred_label_diff[" + str(i) + "]" + str(pred_label_diff))
 
@@ -128,7 +137,7 @@ if __name__ == "__main__":
         help="Name of Dataset",
     )
     parser.add_argument(
-        "-freq", dest="freq", type=int, default=20, help="Frequency for saving plots"
+        "-samples", dest="samples", type=int, default=20, help="samplesuency for saving plots"
     )
     parser.add_argument("-mode", dest="mode", type=str, help="result/simulate")
     parser.add_argument("--MSE", dest="barplot", action="store_true")
@@ -136,7 +145,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     dataset_name = args.dset
-    freq = args.freq
+    samples = args.samples
     mode = args.mode
     barplot = args.barplot
     train_plot = args.train_plot
@@ -152,11 +161,11 @@ if __name__ == "__main__":
 
     # val_size, imageh, imagew
     if mode == "results":
-        plot_results(pred, labels, mode, dataset_name, freq)
+        plot_results(pred, labels, mode, dataset_name, samples)
 
     elif mode == "simulate":
         mse = np.load(f"../{mode}/{dataset_name}/mse.npy")
-        # plot_results(pred, labels, mode, dataset_name, freq)
+        # plot_results(pred, labels, mode, dataset_name, samples)
         plot_simulate(mse)
         createAnimation(pred, dataset_name + "_pred")
         createAnimation(labels, dataset_name + "_ground_truth")

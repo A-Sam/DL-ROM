@@ -16,7 +16,8 @@ class AE_3D_Dataset(data.Dataset):
         self.target = input[10:]
         self.transform = transform
         # NOTE 4': each pth file represents 10 frames
-        self.hashmap = {i:range(i, i+100, 10) for i in range(self.input.shape[0] - 100)}
+        # self.hashmap = {i:range(i, i+100, 10) for i in range(self.input.shape[0] - 100)}
+        self.hashmap = {i:range(i, i+10, 1) for i in range(self.input.shape[0] - 10)}
         print(len(self.hashmap))
 
     def __len__(self):
@@ -77,6 +78,51 @@ class Upsample_3d(nn.Module):
             x=self.lRelu(x)
         return x
 
+def calculate_PCA(preds, dataset_name):
+    p1_labels =  []
+    p2_labels =  []
+    p1_preds =  []
+    p2_preds =  []
+
+    # for img in range(labels.shape[0]):
+    #     U, S, Vt = np.linalg.svd(labels[img])
+    #     idx = np.argsort(S)[::-1]
+    #     S = S[idx]
+    #     U = U[:, idx]
+    #     for i in range(U.shape[0]):
+    #         p1_labels.append( U[i][0] * S[0] )
+    #         p2_labels.append( U[i][1] * S[1] )
+    U, S, Vt = np.linalg.svd(preds)
+    idx = np.argsort(S)[::-1]
+    S = S[idx]
+    U = U[:, idx]
+    for i in range(U.shape[0]):
+        p1_preds.append( U[i][0] * S[0] )
+        p2_preds.append( U[i][1] * S[1] )
+            
+    
+    # PCA
+    # downscaled_labels = np.array([resize(img, (80, 100)) for img in labels])
+    # labels_flattened = np.array([img.flatten() for img in downscaled_labels])
+    # p1_labels, p2_labels = calculate_pca(labels_flattened)
+    
+    # downscaled_preds = np.array([resize(img, (80, 100)) for img in preds])
+    # preds_flattened = np.array([img.flatten() for img in downscaled_preds])
+    # p1_preds, p2_preds = calculate_pca(preds_flattened)
+
+    import matplotlib.pyplot as plt
+    # plt.plot(p1_labels, p2_labels, '-.', linewidth=0.1, color='blue', alpha = 0.5)
+    plt.plot(p1_preds, p2_preds, '-.', linewidth=0.1, color='red', alpha=0.5)
+    plt.xlabel('First Principal Component')
+    plt.ylabel('Second Principal Component')
+    plt.title('PCA of Temporal Image Data')
+    plt.savefig(
+            f"../results/{dataset_name}/p1p2_pca.png",
+            dpi=600,
+            bbox_inches="tight",
+            pad_inches=0)
+    plt.close()
+
 class UNet_3D(nn.Module):
     def __init__(self,name):
         super(UNet_3D, self).__init__()
@@ -124,6 +170,8 @@ class UNet_3D(nn.Module):
         self.u3=Upsample_3d(128, 32 , (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #44
         self.u4=Upsample_3d(64 , 16 , (3, 4, 4) ,stride=(1, 2, 2), padding=(0, 1, 1)) #90
         self.u5=u5#190,360
+        
+        # self.global_preds = np.empty((0,6400))
 
 
     def forward(self,x):
@@ -135,9 +183,21 @@ class UNet_3D(nn.Module):
         down5=self.d5(down4)
 
         conv_shape = down5.shape
+        
         mid = down5.view(down5.shape[0], -1)
+        # ####
+        # if mid.is_cuda:
+        #     mid2 = mid.cpu() 
+        # mid2 = mid2.detach().numpy()
+        # self.global_preds = np.vstack(( self.global_preds, mid2 ))
+        
+        # if self.global_preds.shape[0] == 501:
+        #     calculate_PCA(self.global_preds, self.name)
+        # print(self.global_preds.shape)
+        #####
         mid = self.down(mid)
         mid= F.relu(mid)
+        
         mid = self.up(mid)
         mid= F.relu(mid)
         mid = mid.view(mid.shape)

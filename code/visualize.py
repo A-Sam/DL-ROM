@@ -34,7 +34,7 @@ def plot_results(pred, labels, mode, dataset_name, samples):
 
         plt.subplot(3, 1, 2)
         im = plt.imshow((pred[i]), cmap="turbo", vmin=range_min, vmax=range_max)
-        plt.title("(b) Predection", y=-0.30)
+        plt.title("(b) Prediction", y=-0.30)
         plt.axis("off")
         cbar = plt.colorbar(im, orientation='vertical', pad=0.01)
         # print("pred[" + str(i) + "]" + str(pred[i]))

@@ -45,7 +45,7 @@ if __name__ == "__main__":
         help="Name of Dataset",
     )
     parser.add_argument(
-        "-test_epoch",
+        "--test_epoch",
         dest="test_epoch",
         type=int,
         default=None,
@@ -299,6 +299,52 @@ if __name__ == "__main__":
 
         name = f"../results/{dataset_name}/predictions.npy"
         np.save(name, preds)
+
+        p1_labels =  []
+        p2_labels =  []
+        p1_preds =  []
+        p2_preds =  []
+
+        for img in range(labels.shape[0]):
+            U, S, Vt = np.linalg.svd(labels[img])
+            idx = np.argsort(S)[::-1]
+            S = S[idx]
+            U = U[:, idx]
+            for i in range(U.shape[0]):
+                p1_labels.append( U[i][0] * S[0] )
+                p2_labels.append( U[i][1] * S[1] )
+        for img in range(preds.shape[0]):
+            U, S, Vt = np.linalg.svd(preds[img])
+            idx = np.argsort(S)[::-1]
+            S = S[idx]
+            U = U[:, idx]
+            for i in range(U.shape[0]):
+                p1_preds.append( U[i][0] * S[0] )
+                p2_preds.append( U[i][1] * S[1] )
+                
+
+        # PCA
+        # downscaled_labels = np.array([resize(img, (80, 100)) for img in labels])
+        # labels_flattened = np.array([img.flatten() for img in downscaled_labels])
+        # p1_labels, p2_labels = calculate_pca(labels_flattened)
+
+        # downscaled_preds = np.array([resize(img, (80, 100)) for img in preds])
+        # preds_flattened = np.array([img.flatten() for img in downscaled_preds])
+        # p1_preds, p2_preds = calculate_pca(preds_flattened)
+
+        import matplotlib.pyplot as plt
+        plt.plot(p1_labels, p2_labels, '-.', linewidth=0.1, color='grey', alpha = 0.7, label='Groundtruth')
+        plt.plot(p1_preds, p2_preds, '-.', linewidth=0.1, color='red', alpha=0.7, label='Prediction')
+        plt.legend(loc='upper right')
+        plt.xlabel('P1')
+        plt.ylabel('P2')
+        plt.title('PCA of Temporal Image Data')
+        plt.savefig(
+                f"../results/{dataset_name}/p1p2_pca.png",
+                dpi=600,
+                bbox_inches="tight",
+                pad_inches=0)
+        plt.close()
 
         MSE(dataset_name, preds, labels)
 

@@ -270,6 +270,10 @@ def calculate_pca(image_set):
 
     return projection_onto_pc1, projection_onto_pc2
 
+def principal_components_p1p2(matrix):
+    U, S, Vt = np.linalg.svd(matrix, full_matrices=False)
+    return U[:, 0] * S[0], U[:, 1] * S[1]
+
 if __name__ == "__main__":
     input_dim = torch.randn(10, 320, 160)
     print(input_dim.shape)

@@ -10,6 +10,8 @@ import time
 import torchvision
 from model import AE_3D_Dataset, UNet_3D
 import matplotlib.pyplot as plt
+import imageio
+import cv2
 
 # from model import MyDataset, MLP_Dataset, LSTM_Dataset, autoencoder, autoencoder_B, MLP, Unet, LSTM, LSTM_B, AE_3D_Dataset, autoencoder_3D,UNet_3D
 from train import training, validation, test, simulate
@@ -250,6 +252,9 @@ if __name__ == "__main__":
     if not os.path.exists(f"../results/{dataset_name}/weights/"):
         os.mkdir(f"../results/{dataset_name}/weights/")
 
+    if not os.path.exists(f"../results/{dataset_name}/p1p2_plots/"):
+        os.mkdir(f"../results/{dataset_name}/p1p2_plots/")
+
     if not os.path.exists(f"../simulate/{dataset_name}"):
         os.mkdir(f"../simulate/{dataset_name}")
 
@@ -416,7 +421,7 @@ if __name__ == "__main__":
 
         Val_loss = {}
         Train_loss = {}
-        stack_size = 10
+        stack_size = 1
         validation_freq = 20
         # Epoch loop
         for epoch in range(num_epochs + 1):
@@ -432,7 +437,7 @@ if __name__ == "__main__":
                 Train_Loss.append(train_loss)
                 Train_loss[epoch] = train_loss
 
-            if epoch % 10 == 0:  # and epoch != 0:
+            if epoch % stack_size == 0:  # and epoch != 0:
                 path = f"../results/{dataset_name}/weights/{epoch}.pth"
                 torch.save(model.state_dict(), path)
                 print(optimizer)
@@ -448,71 +453,72 @@ if __name__ == "__main__":
         plot_training(Train_Loss, Dev_Loss)
 
     if args.testing:
-        PATH = find_weight(dataset_name, test_epoch)
+        for pth in range(101):
+            test_epoch = pth
+            PATH = find_weight(dataset_name, test_epoch)
 
-        print(PATH)
+            print(PATH)
 
-        model.load_state_dict(torch.load(PATH))
+            model.load_state_dict(torch.load(PATH))
 
-        test_dataset = AE_3D_Dataset(
-            u_validation, dataset_name, transform=img_transform
-        )
-        test_loader_args = dict(batch_size=1, shuffle=False, num_workers=16)
-        test_loader = data.DataLoader(test_dataset, **test_loader_args)
+            test_dataset = AE_3D_Dataset(
+                u_validation, dataset_name, transform=img_transform
+            )
+            test_loader_args = dict(batch_size=1, shuffle=False, num_workers=16)
+            test_loader = data.DataLoader(test_dataset, **test_loader_args)
 
-        labels, preds = test(model, test_loader)
-        name = f"../results/{dataset_name}/labels.npy"
-        np.save(name, labels)
+            labels, preds = test(model, test_loader)
+            name = f"../results/{dataset_name}/labels.npy"
+            np.save(name, labels)
 
-        name = f"../results/{dataset_name}/predictions.npy"
-        np.save(name, preds)
+            name = f"../results/{dataset_name}/predictions.npy"
+            np.save(name, preds)
 
-        # p1_labels =  []
-        # p2_labels =  []
-        # p1_preds =  []
-        # p2_preds =  []
+            p1_labels =  []
+            p2_labels =  []
+            p1_preds =  []
+            p2_preds =  []
 
-        # for img in range(labels.shape[0]):
-        #     U, S, Vt = np.linalg.svd(labels[img])
-        #     idx = np.argsort(S)[::-1]
-        #     S = S[idx]
-        #     U = U[:, idx]
-        #     for i in range(U.shape[0]):
-        #         p1_labels.append( U[i][0] * S[0] )
-        #         p2_labels.append( U[i][1] * S[1] )
-        # for img in range(preds.shape[0]):
-        #     U, S, Vt = np.linalg.svd(preds[img])
-        #     idx = np.argsort(S)[::-1]
-        #     S = S[idx]
-        #     U = U[:, idx]
-        #     for i in range(U.shape[0]):
-        #         p1_preds.append( U[i][0] * S[0] )
-        #         p2_preds.append( U[i][1] * S[1] )
-                
+            for img in range(labels.shape[0]):
+                U, S, Vt = np.linalg.svd(labels[img])
+                idx = np.argsort(S)[::-1]
+                S = S[idx]
+                U = U[:, idx]
+                for i in range(U.shape[0]):
+                    p1_labels.append( U[i][0] * S[0] )
+                    p2_labels.append( U[i][1] * S[1] )
+            for img in range(preds.shape[0]):
+                U, S, Vt = np.linalg.svd(preds[img])
+                idx = np.argsort(S)[::-1]
+                S = S[idx]
+                U = U[:, idx]
+                for i in range(U.shape[0]):
+                    p1_preds.append( U[i][0] * S[0] )
+                    p2_preds.append( U[i][1] * S[1] )
 
-        # PCA
-        # downscaled_labels = np.array([resize(img, (80, 100)) for img in labels])
-        # labels_flattened = np.array([img.flatten() for img in downscaled_labels])
-        # p1_labels, p2_labels = calculate_pca(labels_flattened)
+            plt.plot(p1_labels, p2_labels, '-.', linewidth=0.1, color='grey', alpha = 0.7, label='Groundtruth')
+            plt.plot(p1_preds, p2_preds, '-.', linewidth=0.1, color='red', alpha=0.7, label='Prediction')
+            plt.legend(loc='upper right')
+            plt.xlabel('P1')
+            plt.ylabel('P2')
+            plt.title('PCA of Temporal Image Data')
+            plt.savefig(
+                    f"../results/{dataset_name}/p1p2_plots/p1p2_{pth}.png",
+                    dpi=600,
+                    bbox_inches="tight",
+                    pad_inches=0)
+            plt.close()
 
-        # downscaled_preds = np.array([resize(img, (80, 100)) for img in preds])
-        # preds_flattened = np.array([img.flatten() for img in downscaled_preds])
-        # p1_preds, p2_preds = calculate_pca(preds_flattened)
+            # MSE(dataset_name, preds, labels)
 
-        # plt.plot(p1_labels, p2_labels, '-.', linewidth=0.1, color='grey', alpha = 0.7, label='Groundtruth')
-        # plt.plot(p1_preds, p2_preds, '-.', linewidth=0.1, color='red', alpha=0.7, label='Prediction')
-        # plt.legend(loc='upper right')
-        # plt.xlabel('P1')
-        # plt.ylabel('P2')
-        # plt.title('PCA of Temporal Image Data')
-        # plt.savefig(
-        #         f"../results/{dataset_name}/p1p2_pca.png",
-        #         dpi=600,
-        #         bbox_inches="tight",
-        #         pad_inches=0)
-        # plt.close()
-
-
+        frames = []
+        common_shape = (3351, 2597) # hardcoded
+        for pth in range(101):
+            img = imageio.imread(f'../results/{dataset_name}/p1p2_plots/p1p2_{pth}.png')
+            img = cv2.resize(img, common_shape)
+            print("pth: " + str(pth)+ str(img.shape))
+            frames.append(img)
+        imageio.mimsave(f'../results/{dataset_name}/p1p2_movie.gif', frames, 'GIF', duration=0.1)
         ##### MSE over timesteps
         # errors = [(pred - label) ** 2 for pred, label in zip(preds, labels)]
         # mean_squared_errors = [np.mean(error) for error in errors]
@@ -598,11 +604,10 @@ if __name__ == "__main__":
         #         pad_inches=0)
         # plt.close()
 
-        plotPCAAllScenarios()
+        # plotPCAAllScenarios()
 
         ###
 
-        MSE(dataset_name, preds, labels)
 
     if args.simulate:
         PATH = find_weight(dataset_name, test_epoch)

@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import argparse
 import os
 from dataset_create import createAnimation
+import imageio
+import cv2
 
 """
 python visualize.py -mode results -d_set 2d_cylinder -samples 10
@@ -18,7 +20,20 @@ def preprocess_plot_data(arr):
 def plot_results(pred, labels, mode, dataset_name, samples):
     assert pred.shape == labels.shape
 
-    for i in np.linspace(0,pred.shape[0]-1,samples,dtype=int):
+    frames = []
+    common_shape = (1357, 2354) # hardcoded
+    print(str(pred.shape[2]) + ","+ str(pred.shape[1]))
+    print(str(labels.shape[2]) + ","+ str(labels.shape[1]))
+    # raise Exception()
+    for pth in range(pred.shape[0]):
+        img = imageio.imread(f'../results/{dataset_name}/plots/frame_{pth}.png')
+        img = cv2.resize(img, common_shape)
+        print("pth: " + str(pth)+ str(img.shape))
+        frames.append(img)
+    imageio.mimsave(f'../results/{dataset_name}/frames_movie.gif', frames, 'GIF', duration=0.1)
+    # for i in np.linspace(0,pred.shape[0]-1,samples,dtype=int): # for specific number of samples
+    raise Exception()
+    for i in range(pred.shape[0]): # for all frames
         print(f"Plotted {i} / {pred.shape[0]}")
 
         flattend_sink_arr = np.concatenate((labels[i], pred[i])).flatten()
